@@ -3,6 +3,7 @@ package aoc
 import cats.effect.*
 import cats.parse.Numbers.digits
 import cats.parse.Parser as P
+import cats.parse.Rfc5234.crlf
 import fs2.Stream
 
 object Day03 extends AOCApp(2023, 3):
@@ -14,10 +15,9 @@ object Day03 extends AOCApp(2023, 3):
     run(input, _.calculateP2())
 
   def run(input: Stream[IO, String], f: Schematic => Long): IO[String] =
-    input.zipWithIndex
-      .map((x, y) => parse(x, y.toInt))
-      .fold(Schematic.empty): (schematic, engines) =>
-        engines.foldLeft(schematic)(_ add _)
+    input
+      .map(Parser.parse)
+      .map(Schematic.apply)
       .map(f)
       .map(_.toString)
       .compile
@@ -62,13 +62,15 @@ object Day03 extends AOCApp(2023, 3):
 
   object Schematic:
     val empty = Schematic(List.empty, Map.empty)
+    def apply(engines: List[Engine]): Schematic =
+      engines.foldLeft(empty)(_ add _)
 
-  def parse(str: String, y: Int): List[Engine] =
-    lazy val ignore = P.char('.')
+  object Parser:
+    lazy val ignore = P.char('.') | crlf
     lazy val number = (ignore.rep0.with1 *> (P.caret.with1 ~ digits) <* ignore.rep0).map: (caret, value) =>
-      Engine.Number(Point(caret.col, y), value.length, value.toLong)
-    lazy val symbolChars = P.charWhere(!"0123456789.".contains(_))
-    lazy val symbol = (ignore.rep0.with1 *> (P.caret.with1 ~ symbolChars) <* ignore.rep0).map: (caret, value) =>
-      Engine.Symbol(Point(caret.col, y), 1, value)
-    lazy val engines = (number.backtrack | symbol).rep0
-    engines.parseAll(str).toOption.get
+      Engine.Number(Point(caret.col, caret.line), value.length, value.toLong)
+    lazy val symbolChar = P.charWhere(!"0123456789.".contains(_))
+    lazy val symbol = (ignore.rep0.with1 *> (P.caret.with1 ~ symbolChar) <* ignore.rep0).map: (caret, value) =>
+      Engine.Symbol(Point(caret.col, caret.line), 1, value)
+    lazy val engines       = (number.backtrack | symbol).rep0
+    def parse(str: String) = engines.parseAll(str).toOption.get
