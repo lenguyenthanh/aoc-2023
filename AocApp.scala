@@ -29,7 +29,7 @@ abstract class AOCApp(year: Int, day: Int) extends IOApp:
           val req = Request[IO](
             uri = uri"https://adventofcode.com" / year.toString / "day" / day.toString / "input"
           ).addCookie("session", sessionCookie)
-          val body = client.stream(req).flatMap(_.body).through(text.utf8.decode)
+          val body = client.stream(req).flatMap(_.body).through(text.utf8.decode).through(text.lines)
           part1(body).flatMap(Console[IO].println(_)) >>
             part2(body).flatMap(Console[IO].println(_))
       .as(ExitCode.Success)
