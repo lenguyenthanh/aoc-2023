@@ -33,3 +33,13 @@ abstract class AOCApp(year: Int, day: Int) extends IOApp:
           part1(body).flatMap(Console[IO].println(_)) >>
             part2(body).flatMap(Console[IO].println(_))
       .as(ExitCode.Success)
+
+  extension (input: Stream[IO, String])
+    def run(f: fs2.Pipe[IO, String, Int]): IO[String] =
+      input
+        .through(fs2.text.lines)
+        .filter(_.trim.nonEmpty)
+        .through(f)
+        .compile
+        .lastOrError
+        .map(_.toString)

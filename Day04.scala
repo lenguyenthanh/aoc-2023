@@ -9,42 +9,37 @@ import fs2.Stream
 object Day04 extends AOCApp(2023, 4):
 
   def part1(input: Stream[IO, String]): IO[String] =
-    input
-      .through(fs2.text.lines)
-      .filter(_.trim.nonEmpty)
-      .map(countP1)
-      .fold(0)(_ + _)
-      .compile
-      .lastOrError
-      .map(_.toString)
+    val solve: fs2.Pipe[IO, String, Int] =
+      _.map(countP1)
+        .fold(0)(_ + _)
+    input.run(solve)
 
   def part2(input: Stream[IO, String]): IO[String] =
-    input
-      .through(fs2.text.lines)
-      .filter(_.trim.nonEmpty)
-      .map(countP2)
-      .fold(Result.empty)((acc, card) => acc.add(card._1, card._2))
-      .map(_.result)
-      .compile
-      .lastOrError
-      .map(_.toString)
+    val solve: fs2.Pipe[IO, String, Int] =
+      _.map(countP2)
+        .fold(Result.empty)(_ add _)
+        .map(_.result)
+    input.run(solve)
 
-  val countP1: String => Int = _ match
+  def countP1(input: String): Int =
+    val (_, winning, have) = parse(input)
+    java.lang.Math.pow(2, winning.intersect(have).size - 1).toInt
+
+  def countP2(input: String): (Int, Int) =
+    val (i, winning, have) = parse(input)
+    i -> winning.intersect(have).size
+
+  def parse: String => (Int, Set[Int], Set[Int]) = _ match
     case s"Card $i: $left | $right" =>
       val winning = toSet(left.trim)
       val have    = toSet(right.trim)
-      java.lang.Math.pow(2, winning.intersect(have).size - 1).toInt
-
-  val countP2: String => (Int, Int) = _ match
-    case s"Card $i: $left | $right" =>
-      val winning = toSet(left.trim)
-      val have    = toSet(right.trim)
-      i.trim.toInt -> winning.intersect(have).size
+      (i.trim.toInt, winning, have)
 
   case class Result(result: Int, bonus: Map[Int, Int]):
-    def add(cardIdx: Int, count: Int): Result =
-      val copies = instances(cardIdx)
-      val newSum = copies + result
+    infix def add(p: Tuple2[Int, Int]): Result =
+      val (cardIdx, count) = p
+      val copies           = instances(cardIdx)
+      val newSum           = copies + result
       val newBonus = List
         .range(cardIdx + 1, cardIdx + count + 1)
         .foldLeft(bonus):
