@@ -1,4 +1,6 @@
-# Advent of Code
+# Advent of Code in Scala
+
+Powered by [scala-cli](https://scala-cli.virtuslab.org/) and [Typelevel Toolkit](https://typelevel.org/toolkit/)
 
 ## Run
 
