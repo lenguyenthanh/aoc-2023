@@ -1,9 +1,6 @@
 package aoc
 
 import cats.effect.*
-import cats.parse.Numbers.digits
-import cats.parse.Parser as P
-import cats.parse.Rfc5234.crlf
 import fs2.Stream
 
 object Day04 extends AOCApp(2023, 4):
