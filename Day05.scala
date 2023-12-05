@@ -6,20 +6,17 @@ import fs2.Stream
 object Day05 extends AOCApp(2023, 5):
 
   def part1(input: Stream[IO, String]): IO[String] =
-    runx(input, _.solveP1())
+    input
+      .map(Parser.parse)
+      .map(_.solveP1())
+      .map(_.toString)
+      .compile
+      .lastOrError
 
   def part2(input: Stream[IO, String]): IO[String] =
     input
       .map(Parser.parse)
       .flatMap(_.solveP2())
-      .map(_.toString)
-      .compile
-      .lastOrError
-
-  def runx(input: Stream[IO, String], f: Solution => Long): IO[String] =
-    input
-      .map(Parser.parse)
-      .map(f)
       .map(_.toString)
       .compile
       .lastOrError
@@ -32,21 +29,22 @@ object Day05 extends AOCApp(2023, 5):
   case class M(source: String, destination: String, data: List[Range]):
     def add(range: Range): M = copy(data = range :: data)
     def get(s: Long): Long =
-      val x = data.foldLeft[Option[Long]](None):
-                case (Some(x), _) => Some(x)
-                case (None, r)    => r.des(s)
-      x.getOrElse(s)
+      data
+        .foldLeft[Option[Long]](None):
+          case (Some(x), _) => Some(x)
+          case (None, r)    => r.des(s)
+        .getOrElse(s)
 
   object M:
     def apply(source: String, destination: String) = new M(source, destination, List.empty)
 
   case class Solution(seeds: List[Long], maps: List[M]):
     def solve(xs: List[Long]): Long =
-      xs
-        .map: s =>
-          maps.foldLeft(s):
-            case (acc, m) => m.get(acc)
-        .min
+      xs.map(solve).min
+
+    def solve(s: Long): Long =
+      maps.foldLeft(s):
+        case (acc, m) => m.get(acc)
 
     def solveP1(): Long =
       solve(seeds)
@@ -61,17 +59,16 @@ object Day05 extends AOCApp(2023, 5):
         .lastOrError
 
     def solveP2(): Stream[IO, Long] =
-      val sx = moreSeeds()
-      // println(sx.length)
-      Stream.emits(sx)
-      .parEvalMap(8)(x => solveFaster(x.toStream))
-      .fold(Long.MaxValue)((min, x) => if x < min then x else min)
+      Stream
+        .emits(moreSeeds())
+        .parEvalMap(100)(x => solveFaster(x.toStream))
+        .fold(Long.MaxValue)((min, x) => if x < min then x else min)
 
     def moreSeeds(): List[SeedRange] =
       @annotation.tailrec
       def loop(rest: List[Long], acc: List[SeedRange]): List[SeedRange] =
         rest match
-          case Nil => acc
+          case Nil          => acc
           case x :: y :: xs => loop(xs, SeedRange(x, y) :: acc)
       loop(seeds, Nil)
 
@@ -101,4 +98,3 @@ object Day05 extends AOCApp(2023, 5):
 
     val parseMapHeader: String => (String, String) = _ match
       case s"$source-to-$destination map:" => (source, destination)
-
