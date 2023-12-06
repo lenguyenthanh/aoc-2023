@@ -1,9 +1,9 @@
 package aoc
 
-import cats.effect.*
-import fs2.Stream
 import cats.Monoid
+import cats.effect.*
 import cats.syntax.all.*
+import fs2.Stream
 
 object Day06 extends AOCApp(2023, 6):
 
@@ -34,7 +34,7 @@ object Day06 extends AOCApp(2023, 6):
       if d >= distance then 1 else 0
 
     def ways: Int =
-      Range.Long(1, time, 1).foldLeft(0)(_ + timeToRace(_))
+      Range.Long(1, time, 1).toList.foldMap(timeToRace)
 
     def waysIO: IO[Int] =
       Stream
