@@ -35,6 +35,7 @@ abstract class AOCApp(year: Int, day: Int) extends IOApp:
       .as(ExitCode.Success)
 
   extension (input: Stream[IO, String])
+
     def run(f: fs2.Pipe[IO, String, Int]): IO[String] =
       input
         .through(fs2.text.lines)
@@ -43,3 +44,11 @@ abstract class AOCApp(year: Int, day: Int) extends IOApp:
         .compile
         .lastOrError
         .map(_.toString)
+
+    def mapInput[T](f: String => T): IO[List[T]] =
+      input
+        .through(fs2.text.lines)
+        .filter(_.trim.nonEmpty)
+        .map(f)
+        .compile
+        .toList
