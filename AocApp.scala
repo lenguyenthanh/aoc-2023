@@ -45,7 +45,7 @@ abstract class AOCApp(year: Int, day: Int) extends IOApp:
         .lastOrError
         .map(_.toString)
 
-    def mapInput[T](f: String => T): IO[List[T]] =
+    def compileAsList[T](f: String => T): IO[List[T]] =
       input
         .through(fs2.text.lines)
         .filter(_.trim.nonEmpty)

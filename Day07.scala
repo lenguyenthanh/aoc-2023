@@ -5,36 +5,29 @@ import fs2.Stream
 
 object Day07 extends AOCApp(2023, 7):
 
-  def part1(input: Stream[IO, String]): IO[String] =
-    input
-      .mapInput(Parser.parseLine)
-      .map(Solution(_))
-      .map(_.solveP1())
-      .map(_.toString)
+  def part1(input: Stream[IO, String]) = solve(_.solveP1())(input)
+  def part2(input: Stream[IO, String]) = solve(_.solveP2())(input)
 
-  def part2(input: Stream[IO, String]): IO[String] =
-    input
-      .mapInput(Parser.parseLine)
+  def solve(f: Solution => Long): Stream[IO, String] => IO[String] =
+    _.compileAsList(Parser.parseLine)
       .map(Solution(_))
-      .map(_.solveP2())
+      .map(f)
       .map(_.toString)
 
   enum Card:
     case A, K, Q, J, T, Nine, Eight, Seven, Six, Five, Four, Three, Two
 
+    def compareP1(other: Card): Int = -ordinal.compareTo(other.ordinal)
+
+    def compareP2(other: Card): Int =
+      if this == Card.J && other == Card.J then 0
+      else if this == Card.J then -1
+      else if other == Card.J then 1
+      else compareP1(other)
+
   enum Kind:
     case Five, Four, FullHouse, Three, TwoPair, Pair, HighCard
-
-  object Card:
-    def compareP1(x: Card, y: Card): Int = -x.ordinal.compareTo(y.ordinal)
-    def compareP2(x: Card, y: Card): Int =
-      if x == Card.J && y == Card.J then 0
-      else if x == Card.J then -1
-      else if y == Card.J then 1
-      else -x.ordinal.compareTo(y.ordinal)
-
-  object Kind:
-    def compare(x: Kind, y: Kind): Int = -x.ordinal.compareTo(y.ordinal)
+    def compare(other: Kind): Int = -ordinal.compareTo(other.ordinal)
 
   case class Hand(cards: List[Card], bid: Long):
 
@@ -51,52 +44,45 @@ object Day07 extends AOCApp(2023, 7):
       else Kind.HighCard
 
     lazy val kindP2: Kind =
-      val firstKind = kindP1
-      if !cards.exists(_ == Card.J) then firstKind
-      else if firstKind == Kind.Five then Kind.Five
-      else if firstKind == Kind.Four then Kind.Five
-      else if firstKind == Kind.FullHouse then Kind.Five
-      else if firstKind == Kind.Three then Kind.Four
-      else if firstKind == Kind.Pair then Kind.Three
-      else if firstKind == Kind.HighCard then Kind.Pair
-      else
-        val countJ = cards.count(_ == Card.J)
-        if countJ == 2 then Kind.Four
-        else Kind.FullHouse
+      if !cards.exists(_ == Card.J) then kindP1
+      else if kindP1 == Kind.Five then Kind.Five
+      else if kindP1 == Kind.Four then Kind.Five
+      else if kindP1 == Kind.FullHouse then Kind.Five
+      else if kindP1 == Kind.Three then Kind.Four
+      else if kindP1 == Kind.Pair then Kind.Three
+      else if kindP1 == Kind.HighCard then Kind.Pair
+      else if cards.count(_ == Card.J) == 2
+      then Kind.Four
+      else Kind.FullHouse
 
   case class Solution(hands: List[Hand]):
     def solveP1(): Long =
-      given Ordering[Hand] with
-        def compare(left: Hand, right: Hand): Int =
-          val kindOrder = Kind.compare(left.kindP1, right.kindP1)
-          if kindOrder != 0 then kindOrder
-          else
-            val cardsOrder = left.cards.zip(right.cards).map((a, b) => Card.compareP1(a, b)).find(_ != 0)
-            cardsOrder.getOrElse(0)
-
-      hands.zipWithIndex.foldLeft(0L):
-        case (acc, (hand, index)) => acc + hand.bid * (index + 1)
+      given Ordering[Hand] = ordering(_.kindP1, _.compareP1(_))
+      count(hands.sorted)
 
     def solveP2(): Long =
-      given Ordering[Hand] with
+      given Ordering[Hand] = ordering(_.kindP2, _.compareP2(_))
+      count(hands.sorted)
+
+    def ordering(k: Hand => Kind, c: (Card, Card) => Int): Ordering[Hand] =
+      new Ordering[Hand]:
         def compare(left: Hand, right: Hand): Int =
-          val kindOrder = Kind.compare(left.kindP2, right.kindP2)
+          val kindOrder = k(left).compare(k(right))
           if kindOrder != 0 then kindOrder
           else
-            val cardsOrder = left.cards.zip(right.cards).map((a, b) => Card.compareP2(a, b)).find(_ != 0)
-            cardsOrder.getOrElse(0)
+            left.cards
+              .zip(right.cards)
+              .map(c.tupled(_))
+              .find(_ != 0)
+              .getOrElse(0)
 
-      hands.sorted.zipWithIndex.foldLeft(0L):
+    val count: List[Hand] => Long =
+      _.zipWithIndex.foldLeft(0L):
         case (acc, (hand, index)) => acc + hand.bid * (index + 1)
 
   object Parser:
-    def parse(input: String): Solution = Solution(Nil)
-
-    def parseLine(line: String): Hand = line match
-      case s"$cs $b" =>
-        val cards = cs.map(parseCard).toList
-        val bid   = b.toLong
-        Hand(cards, bid)
+    val parseLine: String => Hand = _ match
+      case s"$cs $bid" => Hand(cs.map(parseCard).toList, bid.toLong)
 
     val parseCard: Char => Card = _ match
       case 'A' => Card.A
