@@ -9,12 +9,12 @@ import fs2.Stream
 object Day03 extends AOCApp(2023, 3):
 
   def part1(input: Stream[IO, String]): IO[String] =
-    run(input, _.calculateP1())
+    sovle(input, _.calculateP1())
 
   def part2(input: Stream[IO, String]): IO[String] =
-    run(input, _.calculateP2())
+    sovle(input, _.calculateP2())
 
-  def run(input: Stream[IO, String], f: Schematic => Long): IO[String] =
+  def sovle(input: Stream[IO, String], f: Schematic => Long): IO[String] =
     input
       .map(Parser.parse)
       .map(Schematic.apply)
