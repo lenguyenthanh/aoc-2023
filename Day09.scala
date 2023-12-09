@@ -13,22 +13,18 @@ object Day09 extends AOCApp(2023, 9):
     input.run(_.foldMap(countP2))
 
   def countP1(input: String): Int =
-    loop(List.empty, parse(input)).foldLeft(0):
-      (acc, x) => acc + x.last
+    loop(List.empty, parse(input)).foldMap(_.last)
 
   def countP2(input: String): Int =
-    loop(List.empty, parse(input)).foldLeft(0):
-      (acc, x) => x.head - acc
+    loop(List.empty, parse(input)).foldLeft(0)(-_ - -_.head)
 
   @annotation.tailrec
   private def loop(acc: List[List[Int]], current: List[Int]): List[List[Int]] =
-    if current.isTheSame then current +: acc
+    if hasSameItems(current) then current +: acc
     else loop(current +: acc, delta(current))
 
-  def delta(xs: List[Int]): List[Int] =
-    xs.zip(xs.tail).map((x, y) => y - x)
+  def delta(xs: List[Int]) = xs.zip(xs.tail).map(-_ - -_)
 
-  extension (xs: List[Int])
-    def isTheSame: Boolean = xs.toSet.size == 1
+  val hasSameItems: List[Int] => Boolean = _.toSet.size == 1
 
   def parse: String => List[Int] = _.split(" +").filter(_.trim.nonEmpty).map(_.toInt).toList
