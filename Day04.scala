@@ -6,10 +6,7 @@ import fs2.Stream
 object Day04 extends AOCApp(2023, 4):
 
   def part1(input: Stream[IO, String]): IO[String] =
-    val solve: fs2.Pipe[IO, String, Int] =
-      _.map(countP1)
-        .fold(0)(_ + _)
-    input.run(solve)
+    input.run(_.foldMap(countP1))
 
   def part2(input: Stream[IO, String]): IO[String] =
     val solve: fs2.Pipe[IO, String, Int] =
