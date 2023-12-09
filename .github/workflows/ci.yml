@@ -1,0 +1,36 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: ['**']
+
+jobs:
+  build:
+    runs-on: "ubuntu-latest"
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - uses: coursier/cache-action@v6.3
+    - uses: VirtusLab/scala-cli-setup@main
+
+    - name: Compile
+      run: scala-cli compile .
+
+  format:
+    runs-on: "ubuntu-latest"
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - uses: coursier/cache-action@v6.3
+    - uses: VirtusLab/scala-cli-setup@main
+    - name: Scalafmt check
+      run: |
+        scala-cli fmt --check . || (
+          echo "To format code run"
+          echo "  scala-cli fmt ."
+          exit 1
+        )
+
+

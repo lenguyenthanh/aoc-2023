@@ -2,4 +2,4 @@
 
 set -euo pipefail
 
-export $(cat .env | xargs) && scala-cli run Day"$1".scala AOCApp.scala project.scala
+export $(cat .env | xargs) && scala-cli run Day"$1".scala AocApp.scala project.scala
