@@ -1,15 +1,10 @@
 package aoc
 
-import cats.Monoid
 import cats.effect.*
 import cats.syntax.all.*
 import fs2.Stream
 
 object Day06 extends AOCApp(2023, 6):
-
-  given Monoid[Int] with
-    def empty: Int                   = 0
-    def combine(x: Int, y: Int): Int = x + y
 
   def part1(input: Stream[IO, String]): IO[String] =
     input

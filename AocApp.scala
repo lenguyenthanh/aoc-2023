@@ -15,6 +15,10 @@ import org.http4s.client.Client
 
 abstract class AOCApp(year: Int, day: Int) extends IOApp:
 
+  given Monoid[Int] with
+    def empty: Int                   = 0
+    def combine(x: Int, y: Int): Int = x + y
+
   def part1(input: Stream[IO, String]): IO[String]
   def part2(input: Stream[IO, String]): IO[String]
 
