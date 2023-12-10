@@ -6,13 +6,11 @@ import fs2.Stream
 
 object Day10 extends AOCApp(2023, 10):
 
-  def part1(input: Stream[IO, String]): IO[String] =
-    sovle(input, _.solveP1())
+  def part1(input: Stream[IO, String]) = solve(input, _.solveP1())
 
-  def part2(input: Stream[IO, String]): IO[String] =
-    sovle(input, _.solveP2())
+  def part2(input: Stream[IO, String]) = solve(input, _.solveP2())
 
-  def sovle(input: Stream[IO, String], f: Solution => Any): IO[String] =
+  def solve(input: Stream[IO, String], f: Solution => Any): IO[String] =
     input
       .map(Parser.parse)
       .map(f)
@@ -20,13 +18,21 @@ object Day10 extends AOCApp(2023, 10):
       .compile
       .lastOrError
 
-  enum Direction:
-    case VP, HP, NE, NW, SE, SW
+  enum Direction(val value: Char):
+    case VP extends Direction('|')
+    case HP extends Direction('-')
+    case NE extends Direction('L')
+    case NW extends Direction('J')
+    case SE extends Direction('F')
+    case SW extends Direction('7')
+  import Direction.*
 
   case class Point(x: Int, y: Int)
 
-  case class Solution(start: Point, map: Map[Point, Direction]):
-    lazy val possibilities: List[Map[Point, Direction]] =
+  type Grid = Map[Point, Direction]
+
+  case class Solution(start: Point, map: Grid):
+    lazy val possibilities: List[Grid] =
       Direction.values.toList.map(map.updated(start, _))
 
     def solveP1(): Int =
@@ -42,7 +48,7 @@ object Day10 extends AOCApp(2023, 10):
       yield Point(x, y)
       all.count(isInside(path, size))
 
-    def isInside(path: Map[Point, Direction], size: Int)(p: Point): Boolean =
+    def isInside(path: Grid, size: Int)(p: Point): Boolean =
       if path.contains(p) then false
       else
         val n = List
@@ -52,67 +58,57 @@ object Day10 extends AOCApp(2023, 10):
             path.get(Point(xd, p.y)) match
               case None => acc -> none
               case Some(d) =>
-                if d == Direction.NE || d == Direction.SE then acc -> d.some
-                else if d == Direction.HP then acc + begin.fold(1)(_ => 0) -> begin
-                else if d == Direction.NW || d == Direction.SW then
+                if d == NE || d == SE then acc -> d.some
+                else if d == VP then acc + 1 -> none
+                else if d == NW || d == SW then
                   begin match
-                    case None => acc -> begin
-                    case Some(x) =>
-                      if x == Direction.NE && d == Direction.NW then acc -> none
-                      else if x == Direction.NE && d == Direction.SW then acc + 1 -> none
-                      else if x == Direction.SE && d == Direction.SW then acc -> none
-                      else if x == Direction.SE && d == Direction.NW then acc + 1 -> none
-                      else acc                                                    -> begin
-                else acc + 1 -> none
+                    case Some(x) if (x == SE && d == NW) || (x == NE && d == SW) =>
+                      acc + 1 -> none
+                    case _ => acc -> begin
+                else acc -> begin
         n._1 % 2 == 1
 
-    def findPath(m: Map[Point, Direction]) =
+    def findPath(m: Grid) =
       val next = connectedTo(start, m(start)).head
       loop(m, next, start, Set(start, next))
 
     @annotation.tailrec
-    private def loop(map: Map[Point, Direction], next: Point, current: Point, acc: Set[Point]): Option[Set[Point]] =
-      map.get(next) match
+    private def loop(map: Grid, current: Point, previous: Point, acc: Set[Point]): Option[Set[Point]] =
+      map.get(current) match
         case None => None
         case Some(x) =>
-          connectedTo(next, x).find(_ != current) match
+          connectedTo(current, x).find(_ != previous) match
             case None => None
-            case Some(n) if n == start =>
-              if connectedTo(start, map(start)).contains(next) then acc.some
+            case Some(next) if next == start =>
+              if connectedTo(start, map(start)).contains(current) then acc.some
               else none
-            case Some(n) if acc.contains(n) => None
-            case Some(n)                    => loop(map, n, next, acc + n)
+            case Some(n) if acc.contains(n) => none
+            case Some(next)                 => loop(map, next, current, acc + next)
 
     def connectedTo(point: Point, direction: Direction): List[Point] =
       direction match
-        case Direction.VP => List(Point(point.x, point.y + 1), Point(point.x, point.y - 1))
-        case Direction.HP => List(Point(point.x + 1, point.y), Point(point.x - 1, point.y))
-        case Direction.NE => List(Point(point.x, point.y - 1), Point(point.x + 1, point.y))
-        case Direction.NW => List(Point(point.x, point.y - 1), Point(point.x - 1, point.y))
-        case Direction.SE => List(Point(point.x + 1, point.y), Point(point.x, point.y + 1))
-        case Direction.SW => List(Point(point.x - 1, point.y), Point(point.x, point.y + 1))
+        case VP => List(Point(point.x, point.y + 1), Point(point.x, point.y - 1))
+        case HP => List(Point(point.x + 1, point.y), Point(point.x - 1, point.y))
+        case NE => List(Point(point.x, point.y - 1), Point(point.x + 1, point.y))
+        case NW => List(Point(point.x, point.y - 1), Point(point.x - 1, point.y))
+        case SE => List(Point(point.x + 1, point.y), Point(point.x, point.y + 1))
+        case SW => List(Point(point.x - 1, point.y), Point(point.x, point.y + 1))
 
   object Parser:
     import cats.parse.Parser as P
     import cats.parse.Rfc5234.lf
 
+    lazy val directionMap     = Direction.values.map(x => x.value -> x).toMap
     lazy val ignore           = P.char('.').backtrack | lf
-    lazy val direction        = P.charIn('|', '-', 'L', 'J', 'F', '7').map(charToDirection)
+    lazy val direction        = P.charIn(directionMap.keySet).map(directionMap(_))
     lazy val startOrDirection = P.char('S').backtrack.as(().asLeft) | direction.map(_.asRight)
-    lazy val tile = (ignore.rep0.with1 *> (P.caret.with1 ~ startOrDirection) <* ignore.rep0).map: (caret, value) =>
-      Point(caret.col, caret.line) -> value
+    lazy val solution = (ignore.rep0.with1 *> (P.caret.with1 ~ startOrDirection) <* ignore.rep0)
+      .map: (caret, value) =>
+        Point(caret.col, caret.line) -> value
+      .rep0
+      .map: xs =>
+        val start = xs.collectFirst { case (p, Left(_)) => p }.get
+        val map   = xs.collect { case (p, Right(d)) => p -> d }.toMap
+        Solution(start, map)
 
-    lazy val tiles = tile.rep0.map: tiles =>
-      val start = tiles.collectFirst { case (p, Left(_)) => p }.get
-      val map   = tiles.collect { case (p, Right(d)) => p -> d }.toMap
-      Solution(start, map)
-
-    lazy val charToDirection: Char => Direction = _ match
-      case '|' => Direction.VP
-      case '-' => Direction.HP
-      case 'L' => Direction.NE
-      case 'J' => Direction.NW
-      case 'F' => Direction.SE
-      case '7' => Direction.SW
-
-    def parse(str: String) = tiles.parseAll(str).toOption.get
+    def parse(str: String) = solution.parseAll(str).toOption.get
