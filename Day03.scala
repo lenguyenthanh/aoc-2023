@@ -5,11 +5,9 @@ import fs2.Stream
 
 object Day03 extends AOCApp(2023, 3):
 
-  def part1(input: Stream[IO, String]): IO[String] =
-    sovle(input, _.calculateP1())
+  def part1(input: Stream[IO, String]): IO[String] = sovle(input, _.calculateP1())
 
-  def part2(input: Stream[IO, String]): IO[String] =
-    sovle(input, _.calculateP2())
+  def part2(input: Stream[IO, String]): IO[String] = sovle(input, _.calculateP2())
 
   def sovle(input: Stream[IO, String], f: Schematic => Long): IO[String] =
     input

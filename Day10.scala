@@ -11,12 +11,7 @@ object Day10 extends AOCApp(2023, 10):
   def part2(input: Stream[IO, String]) = solve(input, _.solveP2())
 
   def solve(input: Stream[IO, String], f: Solution => Any): IO[String] =
-    input
-      .map(Parser.parse)
-      .map(f)
-      .map(_.toString)
-      .compile
-      .lastOrError
+    input.map(Parser.parse).map(f).map(_.toString).compile.lastOrError
 
   enum Direction(val value: Char):
     case VP extends Direction('|')
@@ -31,7 +26,7 @@ object Day10 extends AOCApp(2023, 10):
 
   type Grid = Map[Point, Direction]
 
-  case class Solution(start: Point, map: Grid):
+  case class Solution(start: Point, map: Grid, size: Int):
     lazy val possibilities: List[Grid] =
       Direction.values.toList.map(map.updated(start, _))
 
@@ -41,14 +36,13 @@ object Day10 extends AOCApp(2023, 10):
     def solveP2(): Int =
       val (map, ls) = possibilities.collectFirstSome(x => findPath(x).map(x -> _)).get
       val path      = map.filter(x => ls.contains(x._1))
-      val size      = 140
       val all = for
         x <- List.range(0, size)
         y <- List.range(0, size)
       yield Point(x, y)
-      all.count(isInside(path, size))
+      all.count(isInside(path))
 
-    def isInside(path: Grid, size: Int)(p: Point): Boolean =
+    def isInside(path: Grid)(p: Point): Boolean =
       if path.contains(p) then false
       else
         val n = List
@@ -109,6 +103,8 @@ object Day10 extends AOCApp(2023, 10):
       .map: xs =>
         val start = xs.collectFirst { case (p, Left(_)) => p }.get
         val map   = xs.collect { case (p, Right(d)) => p -> d }.toMap
-        Solution(start, map)
+        start -> map
 
-    def parse(str: String) = solution.parseAll(str).toOption.get
+    def parse(str: String) =
+      val (start, map) = solution.parseAll(str).toOption.get
+      Solution(start, map, str.split("\n").toList.size)

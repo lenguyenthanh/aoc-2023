@@ -9,12 +9,7 @@ object Day08 extends AOCApp(2023, 8):
   def part2(input: Stream[IO, String]): IO[String] = solve(input, _.solveP2)
 
   def solve(input: Stream[IO, String], f: Solution => Any): IO[String] =
-    input
-      .map(Parser.parse)
-      .map(f)
-      .map(_.toString)
-      .compile
-      .lastOrError
+    input.map(Parser.parse).map(f).map(_.toString).compile.lastOrError
 
   case class Pair(left: String, right: String)
   enum Direction:

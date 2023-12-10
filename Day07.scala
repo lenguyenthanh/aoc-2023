@@ -9,10 +9,7 @@ object Day07 extends AOCApp(2023, 7):
   def part2(input: Stream[IO, String]) = solve(_.solveP2())(input)
 
   def solve(f: Solution => Long): Stream[IO, String] => IO[String] =
-    _.compileAsList(Parser.parseLine)
-      .map(Solution(_))
-      .map(f)
-      .map(_.toString)
+    _.compileAsList(Parser.parseLine).map(Solution(_)).map(f).map(_.toString)
 
   enum Card:
     case A, K, Q, J, T, Nine, Eight, Seven, Six, Five, Four, Three, Two
