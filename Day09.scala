@@ -23,7 +23,7 @@ object Day09 extends AOCApp(2023, 9):
     if hasSameItems(current) then current +: acc
     else loop(current +: acc, delta(current))
 
-  def delta(xs: List[Int]) = xs.zip(xs.tail).map(-_ - -_)
+  def delta(xs: List[Int]) = xs.tail.zip(xs).map(_ - _)
 
   val hasSameItems: List[Int] => Boolean = _.toSet.size == 1
 
