@@ -1,9 +1,6 @@
 package aoc
 
 import cats.effect.*
-import cats.parse.Numbers.digits
-import cats.parse.Parser as P
-import cats.parse.Rfc5234.crlf
 import fs2.Stream
 
 object Day03 extends AOCApp(2023, 3):
@@ -66,6 +63,10 @@ object Day03 extends AOCApp(2023, 3):
       engines.foldLeft(empty)(_ add _)
 
   object Parser:
+    import cats.parse.Numbers.digits
+    import cats.parse.Parser as P
+    import cats.parse.Rfc5234.crlf
+
     lazy val ignore = P.char('.') | crlf
     lazy val number = (ignore.rep0.with1 *> (P.caret.with1 ~ digits) <* ignore.rep0).map: (caret, value) =>
       Engine.Number(Point(caret.col, caret.line), value.length, value.toLong)
