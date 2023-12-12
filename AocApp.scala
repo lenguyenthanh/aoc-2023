@@ -19,6 +19,10 @@ abstract class AOCApp(year: Int, day: Int) extends IOApp:
     def empty: Int                   = 0
     def combine(x: Int, y: Int): Int = x + y
 
+  given Monoid[Long] with
+    def empty: Long                     = 0
+    def combine(x: Long, y: Long): Long = x + y
+
   def part1(input: Stream[IO, String]): IO[String]
   def part2(input: Stream[IO, String]): IO[String]
 
@@ -40,7 +44,7 @@ abstract class AOCApp(year: Int, day: Int) extends IOApp:
 
   extension (input: Stream[IO, String])
 
-    def run(f: fs2.Pipe[IO, String, Int]): IO[String] =
+    def run(f: fs2.Pipe[IO, String, Any]): IO[String] =
       input
         .through(fs2.text.lines)
         .filter(_.trim.nonEmpty)
